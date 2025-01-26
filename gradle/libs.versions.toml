@@ -1,0 +1,30 @@
+# Version catalog is a central place for you to declare and version dependencies
+# https://docs.gradle.org/current/userguide/platforms.html#sub:version-catalog
+# https://docs.gradle.org/current/userguide/platforms.html#sub::toml-dependencies-format
+
+[versions]
+kotlin = "2.1.0"
+kotlin-logging = "7.0.3"
+jooq = "3.19.18"
+hikari = "6.2.1"
+testcontainers = "1.20.4"
+flyway = "11.2.0"
+postgres = "42.7.5"
+
+[libraries]
+kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlinLogging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "kotlin-logging" }
+jooq = { module = "org.jooq:jooq", version.ref = "jooq" }
+hikari = { module = "com.zaxxer:HikariCP", version.ref = "hikari" }
+testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
+testcontainersJunit = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
+testcontainersPostgres = { module = "org.testcontainers:postgresql", version.ref = "testcontainers" }
+flyway = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
+flywayPostgres = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
+postgres = { module = "org.postgresql:postgresql", version.ref = "postgres" }
+
+# Libraries can be bundled together for easier import
+[bundles]
+kotlinxEcosystem = []
+
+[plugins]
