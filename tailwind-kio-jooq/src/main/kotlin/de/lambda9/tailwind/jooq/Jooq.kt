@@ -4,7 +4,6 @@ import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import de.lambda9.tailwind.core.KIO
 import de.lambda9.tailwind.core.extensions.kio.refineOrDie
-import de.lambda9.tailwind.jooq.config.DatabaseConfig
 import org.jooq.DSLContext
 import org.jooq.SQLDialect
 import org.jooq.exception.DataAccessException
@@ -14,6 +13,7 @@ import org.jooq.impl.DefaultExecuteListenerProvider
 import java.io.PrintWriter
 import java.io.Serializable
 import java.util.*
+import javax.sql.DataSource
 
 
 /**
@@ -38,14 +38,27 @@ data class Jooq<out Env>(
 ): Serializable {
 
     /**
+     * A [Config] contains data to create a new [DSLContext] and [DataSource].
      *
-     * @param url
-     * @param user
-     * @param password
-     * @param schema
-     * @param dialect
-     * @param driver
-     * @param queryPrinter
+     * ## Example
+     *
+     * ```kotlin
+     * val (env, ds) = Jooq.create(Unit) {
+     *    user = "lambda"
+     *    url = "jdbc:postgresql://localhost/my-db"
+     *    password = "sql"
+     *    schema = "my-schema"
+     *    queryPrinter = JooqQueryPrinter { query -> !query.startsWith("select email") }
+     * }
+     * ```
+     *
+     * @param url the database url, e.g. jdbc:postgresql://localhost/my-db.
+     * @param user the user of the database.
+     * @param password the password of the database.
+     * @param schema the schema
+     * @param dialect the dialect of the database.
+     * @param driver the used driver class (don't forget to depend on it)
+     * @param queryPrinter a QueryPrinter, that can print execution times of queries.
      */
     data class Config(
         var url: String = "jdbc:postgresql://localhost/db",
@@ -67,7 +80,7 @@ data class Jooq<out Env>(
                 SQLDialect.YUGABYTEDB -> null
                 else -> null
         },
-        var queryPrinter: Boolean = true,
+        var queryPrinter: JooqQueryPrinter? = JooqQueryPrinter(),
     ): Serializable
 
     companion object {
@@ -109,7 +122,7 @@ data class Jooq<out Env>(
          *
          * **Note**: For this reason, if you are using this function inside
          * a comprehension, you *should never* run another monadic action
-         * inside a Jooq.query.
+         * inside a Jooq.query!
          *
          * @param runQuery A function running a query and working with the [DSLContext]
          * @return a new [KIO]
@@ -124,8 +137,17 @@ data class Jooq<out Env>(
          * @param env the rest of the environment
          * @return a new Jooq
          */
-        fun <R> create(env: R, init: Config.() -> Unit): Pair<Jooq<R>, HikariDataSource> {
-            val config = Config().apply(init)
+        fun <R> create(env: R, init: Config.() -> Unit): Pair<Jooq<R>, DataSource> =
+            create(env, Config().apply(init))
+
+        /**
+         * Create a new [Jooq] environment from the given [config] and [env].
+         *
+         * @param config a database configuration
+         * @param env the rest of the environment
+         * @return a new Jooq
+         */
+        fun <R> create(env: R, config: Config): Pair<Jooq<R>, DataSource> {
             val props = Properties().apply {
                 put("dataSource.logWriter", PrintWriter(System.out))
             }
@@ -142,11 +164,7 @@ data class Jooq<out Env>(
                 .set(ds)
                 .set(config.dialect)
                 .set(DefaultExecuteListenerProvider(DeleteOrUpdateWithoutWhereListener()))
-                .apply {
-                    if (config.queryPrinter) {
-                        set(JooqQueryPrinter())
-                    }
-                }
+                .apply { config.queryPrinter?.let { set(it) } }
 
             return Jooq(
                 dsl = DSL.using(dslConfiguration),

@@ -17,6 +17,7 @@ dokka {
 }
 
 java {
+    withJavadocJar()
     withSourcesJar()
 }
 

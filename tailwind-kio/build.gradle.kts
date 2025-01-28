@@ -5,6 +5,18 @@ plugins {
     id("org.jetbrains.dokka")
 }
 
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = "de.lambda9.tailwind"
+            artifactId = "tailwind-kio"
+            version = "1.0.0-SNAPSHOT"
+
+            from(components["java"])
+        }
+    }
+}
+
 dependencies {
     // Project "app" depends on project "utils". (Project paths are separated with ":", so ":utils" refers to the top-level "utils" project.)
     testImplementation(kotlin("test"))

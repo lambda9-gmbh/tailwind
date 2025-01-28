@@ -5,6 +5,18 @@ plugins {
     id("org.jetbrains.dokka")
 }
 
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = "de.lambda9.tailwind"
+            artifactId = "tailwind-kio-jooq"
+            version = "1.0.0-SNAPSHOT"
+
+            from(components["java"])
+        }
+    }
+}
+
 dependencies {
     // Apply the kotlinx bundle of dependencies from the version catalog (`gradle/libs.versions.toml`).
     implementation(libs.jooq)
