@@ -238,6 +238,21 @@ fun <R, E: E1, E1, A: A1, A1> KIO<R, E, A>.orIf(condition: (A) -> Boolean, then:
             KIO.ok(it)
     }
 
+/**
+ * Returns a new [KIO], which will run [then], when the given [condition]
+ * evaluates to true.
+ *
+ * @param condition any boolean condition, based on the evaluated value
+ * @param
+ * @return a new [KIO]
+ */
+fun <R, E: E1, E1, A: A1, A1> KIO<R, E, A>.failIf(condition: (A) -> Boolean, then: (A) -> E1): KIO<R, E1, A1> =
+    andThen {
+        if (condition(it))
+            KIO.fail(then(it))
+        else
+            KIO.ok(it)
+    }
 
 /**
  * Returns a new [KIO], which will run [this], when the given [condition]
