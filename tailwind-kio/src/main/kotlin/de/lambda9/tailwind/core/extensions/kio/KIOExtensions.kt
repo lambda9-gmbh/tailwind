@@ -24,7 +24,7 @@ infix fun <R, R1: R, E: E1, E1, A, B> KIO<R, E, A>.andThen(f: (A) -> KIO<R1, E1,
  * @param onFailure a function applied to a failed computation
  * @return a new [KIO]
  */
-fun <R, R1: R, E1, E2, A, B> KIO<R, E1, A>.fold(
+fun <R, R1: R, E1: E2, E2, A, B> KIO<R, E1, A>.fold(
     onFailure: (E1) -> B,
     onSuccess: (A) -> B
 ): KIO<R1, E2, B> =
@@ -66,6 +66,7 @@ fun <R, R1: R, E1, E2, A, B> KIO<R, E1, A>.foldM(
  * @param h a handler, which will be invoked on the error [E].
  * @return a new [KIO]
  */
+@Deprecated(message = "catchError has been deprecated in favor of recover.", replaceWith = ReplaceWith("recover(h)"))
 fun <R, E, E1, A> KIO<R, E, A>.catchError(
     h: (E) -> KIO<R, E1, A>
 ): KIO<R, E1, A> =
@@ -86,7 +87,15 @@ fun <R, R1: R, E1, E2, A, B> KIO<R, E1, A>.foldCauseM(
 ): KIO<R1, E2, B> =
     KIO.Fold(this, onSuccess, onFailure)
 
-
+/**
+ * Returns either a value of type [A] if [A] is not null
+ * or runs the new action produced by [f].
+ *
+ * @param f a function, which returns a new [KIO] to be run, if [A] is null.
+ */
+@Deprecated("Deprecated in favor of KIO.failOnNull", replaceWith = ReplaceWith("KIO.failOnNull(this, f)"))
+fun <R, E, A> A?.onNullDo(f: () -> KIO<R, E, A>): KIO<R, E, A> =
+    if (this == null) f() else IO.ok(this)
 
 /**
  * Returns a [KIO], which catches an error [E] and
@@ -95,17 +104,7 @@ fun <R, R1: R, E1, E2, A, B> KIO<R, E1, A>.foldCauseM(
  * @param other
  * @return a new [KIO]
  */
-infix fun <R, E, E1: E, A> KIO<R, E, A>.or(other: () -> KIO<R, E1, A>): KIO<R, E1, A> =
-    catchError { other() }
-
-
-/**
- * Returns a [KIO], which catches an error [E] and
- * runs [other].
- *
- * @param other
- * @return a new [KIO]
- */
+@Deprecated("Deprecated in favor of onNull", replaceWith = ReplaceWith("onNull(other)"))
 infix fun <R, R1: R, E: E1, E1, A> KIO<R, E, A?>.orOnNull(
     other: () -> KIO<R1, E1, A>
 ): KIO<R1, E1, A> = andThen<R, R1, E, E1, A?, A> {
@@ -116,33 +115,6 @@ infix fun <R, R1: R, E: E1, E1, A> KIO<R, E, A?>.orOnNull(
         KIO.ok(it)
     }
 }
-
-
-/**
- * Returns a [KIO], which requires the nullable value [A] to
- * be present and fails otherwise.
- *
- * @param error
- * @return a new [KIO]
- */
-@Deprecated(message = "This method is too abstract in naming and has been deprecated for onNullFail.", replaceWith = ReplaceWith("onNullFail(error)", "de.lambda9.tailwind.core.extensions.kio.onNullFail"))
-infix fun <R, R1: R, E: E1, E1, A> KIO<R, E, A?>.require(
-    error: () -> E1,
-): KIO<R1, E1, A> =
-    onNullFail(error)
-
-
-/**
- * Returns a [KIO], which requires the nullable value [A] to
- * be present and fails otherwise.
- *
- * @param error
- * @return a new [KIO]
- */
-infix fun <R, R1: R, E: E1, E1, A> KIO<R, E, A?>.onNullFail(
-    error: () -> E1,
-): KIO<R1, E1, A> =
-    orOnNull { KIO.fail(error()) }
 
 
 /**
@@ -174,6 +146,19 @@ fun <R, E, A> Iterable<KIO<R, E, A>>.collect(): KIO<R, E, List<A>> =
         }
     }
 
+/**
+ * Returns a [KIO], which will run every [KIO] in the list and
+ * bail on the first error.
+ *
+ * @return a new [KIO]
+ */
+fun <R, E, A, B> Iterable<A>.collectBy(f: (A) -> KIO<R, E, B>): KIO<R, E, List<B>> =
+    fold(KIO.ok(mutableListOf())) { result: KIO<R, E, List<B>>, next ->
+        result.andThen { xs: List<B> ->
+            f(next).map { xs + listOf(it) }
+        }
+    }
+
 
 /**
  * Returns a [KIO], which will collect
@@ -181,16 +166,10 @@ fun <R, E, A> Iterable<KIO<R, E, A>>.collect(): KIO<R, E, List<A>> =
  * @param f
  * @return
  */
+@Deprecated("Deprecated in favor of collectBy", replaceWith = ReplaceWith("collectBy(f)"))
 fun <R, E, A, B> Iterable<A>.forEachM(f: (A) -> KIO<R, E, B>): KIO<R, E, List<B>> =
     map(f).collect()
 
-
-/**
- * Returns a [KIO], which traverses this [Iterable] and returns a new list
- *
- */
-fun <R, E, A, B> Iterable<A>.mapToKIO(f: (A) -> KIO<R, E, B>): KIO<R, E, List<B>> =
-    map(f).collect()
 
 /**
  * Returns a new [KIO], which flips error and success channels.
@@ -199,16 +178,6 @@ fun <R, E, A, B> Iterable<A>.mapToKIO(f: (A) -> KIO<R, E, B>): KIO<R, E, List<B>
  */
 fun <R, E, A> KIO<R, E, A>.flip(): KIO<R, A, E> =
     foldM(onSuccess = { KIO.fail(it) }, onFailure = { KIO.ok(it) })
-
-
-/**
- * Returns a new [KIO], which will eventually succeed by
- * continuously re-running this [KIO], when an error occurs.
- *
- * @return a new [KIO]
- */
-fun <R, E, A> KIO<R, E, A>.eventually(): KIO<R, Nothing, A> =
-    this or ::eventually
 
 
 /**
@@ -221,55 +190,23 @@ fun <R, E, A> KIO<R, E, A>.eventually(): KIO<R, Nothing, A> =
 fun <R, E, A> KIO<R, E, A>.guard(condition: Boolean): KIO<R, E, Unit> =
     if (condition) map { } else KIO.unit
 
-
 /**
- * Returns a new [KIO], which will run [then], when the given [condition]
+ * Returns a new [KIO], which will run [transform], when the given [condition]
  * evaluates to true.
  *
  * @param condition any boolean condition, based on the evaluated value
- * @param
+ * @param transform
  * @return a new [KIO]
  */
-fun <R, E: E1, E1, A: A1, A1> KIO<R, E, A>.orIf(condition: (A) -> Boolean, then: KIO<R, E1, A1>): KIO<R, E1, A1> =
+fun <R, E: E1, E1, A: A1, A1> KIO<R, E, A>.failIf(
+    condition: (A) -> Boolean,
+    transform: (A) -> E1
+): KIO<R, E1, A1> =
     andThen {
         if (condition(it))
-            then
+            KIO.fail(transform(it))
         else
             KIO.ok(it)
-    }
-
-/**
- * Returns a new [KIO], which will run [then], when the given [condition]
- * evaluates to true.
- *
- * @param condition any boolean condition, based on the evaluated value
- * @param
- * @return a new [KIO]
- */
-fun <R, E: E1, E1, A: A1, A1> KIO<R, E, A>.failIf(condition: (A) -> Boolean, then: (A) -> E1): KIO<R, E1, A1> =
-    andThen {
-        if (condition(it))
-            KIO.fail(then(it))
-        else
-            KIO.ok(it)
-    }
-
-/**
- * Returns a new [KIO], which will run [this], when the given [condition]
- * evaluates to true.
- *
- * @param condition any boolean condition
- * @param
- * @return a new [KIO]
- */
-fun <R, E: E1, E1, A: A1, A1> KIO<R, E, A>.orIfM(condition: (A) -> KIO<R, E, Boolean>, then: KIO<R, E1, A1>): KIO<R, E1, A1> =
-    andThen { value ->
-        condition(value).andThen {
-            if (it)
-                then
-            else
-                KIO.ok(value)
-        }
     }
 
 /**
@@ -335,7 +272,7 @@ fun <R, E, A> KIO<R, E, A>.measured(): KIO<R, E, Pair<Duration, A>> =
  * @return a new [KIO]
  */
 fun <R, E: Throwable, A> KIO<R, Throwable, A>.refineOrDie(clazz: KClass<E>): KIO<R, E, A> =
-    catchError {
+    recover {
         if (clazz.java.isAssignableFrom(it::class.java))
             @Suppress("UNCHECKED_CAST")
             KIO.fail(it as E)
@@ -351,7 +288,7 @@ fun <R, E: Throwable, A> KIO<R, Throwable, A>.refineOrDie(clazz: KClass<E>): KIO
  * @return a new [KIO]
  */
 fun <R, E: Throwable, A> KIO<R, E, A>.orDie(): URIO<R, A> =
-    catchError { throw it }
+    recover { throw it }
 
 
 /**
@@ -381,44 +318,82 @@ fun <R, E, A, B> KIO<R, E, A>.bracketIgnore(
 
 
 /**
- * Returns either a value of type [A] or fails with an error of type [E]
+ * Returns a [KIO], which runs the handler [h] on an error.
  *
- * ## Example
- *
- * Here is an example of where this function can be useful.
- *
- * ```kotlin
- * fun authenticate(
- *     username: String,
- *     password: String,
- * ): IO<Error, UsersRecord> = KIO.comprehension {
- *     val user = !UsersRepo.findByUsername(username)
- *         .orDie().onNullFail { Error.UnknownUser }
- *
- *     val databaseHash = !user.password.onNullFailWith { Error.UnknownUser }
- *
- *     // ...
- * }
- * ```
- *
- * @param error a function returning an error
+ * @param h a handler, which will be invoked on the error [E].
+ * @return a new [KIO]
  */
-fun <E, A> A?.onNullFail(error: () -> E): IO<E, A> =
-    onNullDo { IO.fail(error()) }
-
-/**
- * Returns either a value of type [A] if [A] is not null
- * or runs the new action produced by [f].
- *
- * @param f a function, which returns a new [KIO] to be run, if [A] is null.
- */
-fun <R, E, A> A?.onNullDo(f: () -> KIO<R, E, A>): KIO<R, E, A> =
-    if (this == null) f() else IO.ok(this)
+infix fun <R, E, E1, A> KIO<R, E, A>.recover(
+    h: (E) -> KIO<R, E1, A>
+): KIO<R, E1, A> =
+    foldM(h, KIO.Companion::ok)
 
 
 /**
+ * Returns a [KIO], which runs the handler [h] on an error.
  *
- * @return
+ * # Example
+ *
+ * This function is especially useful, if you also want to handle any
+ * exception.
+ *
+ *
+ * @param h a handler, which will be invoked on the error [E].
+ * @return a new [KIO]
  */
-internal fun <E, A> IO<E, A>.unsafeRunSync(): Exit<E, A> =
-    Runtime.new(Unit).unsafeRunSync(this)
+infix fun <R, E: E1, E1, A> KIO<R, E, A>.recoverCause(
+    h: (Cause<E>) -> KIO<R, E1, A>
+): KIO<R, E1, A> =
+    foldCauseM(h, KIO.Companion::ok)
+
+
+/**
+ * Returns a [KIO], which runs the handler [h] on an error.
+ *
+ * @param h a handler, which will be invoked on the error [E].
+ * @return a new [KIO]
+ */
+infix fun <R, E: E1, E1, A> KIO<R, E, A>.recoverDefault(
+    h: () -> A
+): KIO<R, E1, A> =
+    recover { KIO.ok(h()) }
+
+
+/**
+ * Returns a [KIO], which runs the handler [h] on an error.
+ *
+ * @param h a handler, which will be invoked on the error [E].
+ * @return a new [KIO]
+ */
+fun <R, E: E1, E1, A> KIO<R, E, A?>.onNull(
+    h: () -> KIO<R, E1, A>,
+): KIO<R, E1, A> =
+    andThen {
+        if (it == null)
+            h()
+        else
+            KIO.ok(it)
+    }
+
+/**
+ * Returns a [KIO], which runs the handler [h] on an error.
+ *
+ * @param h a handler, which will be invoked on the error [E].
+ * @return a new [KIO]
+ */
+infix fun <R, R1: R, E: E1, E1, A> KIO<R, E, A?>.onNullFail(
+    h: () -> E1,
+): KIO<R, E1, A> =
+    onNull { KIO.fail(h()) }
+
+
+/**
+ * Returns a [KIO], which runs the handler [h] on an error.
+ *
+ * @param h a handler, which will be invoked on the error [E].
+ * @return a new [KIO]
+ */
+fun <R, E: E1, E1, A> KIO<R, E, A?>.onNullDefault(
+    h: () -> A,
+): KIO<R, E1, A> =
+    onNull { KIO.ok(h()) }

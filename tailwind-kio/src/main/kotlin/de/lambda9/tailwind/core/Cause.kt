@@ -1,3 +1,4 @@
+@file:Suppress("unused")
 package de.lambda9.tailwind.core
 
 import java.io.PrintWriter
@@ -67,6 +68,7 @@ sealed class Cause<out E> {
     )
 
     /**
+     * Fold this [Cause]
      *
      * @param onExpected
      * @param onPanic
@@ -96,10 +98,7 @@ sealed class Cause<out E> {
     fun prettyPrint(): String =
         fold(
             onExpected = {
-                if (it != null)
-                    it.toString()
-                else
-                    "null"
+                it?.toString() ?: "null"
             },
             onPanic = {
                 val writer = StringWriter()

@@ -4,6 +4,7 @@ import de.lambda9.tailwind.core.experimental.DangerouslyInternalAppException
 import de.lambda9.tailwind.core.extensions.kio.catchError
 import de.lambda9.tailwind.core.extensions.kio.andThen
 import de.lambda9.tailwind.core.extensions.kio.collect
+import de.lambda9.tailwind.core.extensions.kio.recover
 
 /**
  * An [App] represents a computation which runs in an environment [Env]
@@ -102,7 +103,7 @@ value class App<Env, Error, T>(internal val kio: KIO<Env, Error, T>) {
      * be applied. If it contains a value, the value will be propagated.
      */
     infix fun catchError(h: (Error) -> App<Env, Error, T>): App<Env, Error, T> =
-        App(kio.catchError { h(it).kio })
+        App(kio.recover { h(it).kio })
 
     /**
      * Provider another result, in case the computation failed.

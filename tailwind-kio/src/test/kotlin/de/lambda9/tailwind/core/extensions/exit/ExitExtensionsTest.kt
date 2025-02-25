@@ -4,7 +4,7 @@ import de.lambda9.tailwind.core.Cause
 import de.lambda9.tailwind.core.Exit
 import de.lambda9.tailwind.core.IO
 import de.lambda9.tailwind.core.KIO
-import de.lambda9.tailwind.core.extensions.kio.unsafeRunSync
+import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
 
 import org.junit.jupiter.api.Assertions.*
 import kotlin.test.Test

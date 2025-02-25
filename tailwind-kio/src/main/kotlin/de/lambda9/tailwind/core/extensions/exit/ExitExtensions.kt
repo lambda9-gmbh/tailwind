@@ -12,7 +12,7 @@ import kotlin.jvm.Throws
  *
  * @param f
  */
-fun <E, A: A1, A1> Exit<E, A>.getOrElse(
+inline fun <E, A: A1, A1> Exit<E, A>.getOrElse(
     f: (Cause<E>) -> A1,
 ): A1 = fold(
     onSuccess = { it },

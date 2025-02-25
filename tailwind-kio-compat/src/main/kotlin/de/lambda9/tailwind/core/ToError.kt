@@ -8,7 +8,6 @@ package de.lambda9.tailwind.core
  * it became evident, that it would be introduced in every
  * project anyways.
  */
-@Deprecated("")
 interface ToError<Err> {
 
     /**

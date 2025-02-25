@@ -319,6 +319,21 @@ sealed class KIO<in R, out E, out A>: Serializable {
         fun <R, E: E1, E1> failOnM(predicate: KIO<R, E, Boolean>, f: () -> E1): KIO<R, E1, Unit> =
             predicate andThen { failOn(it, f) }
 
+        /**
+         * Returns a [KIO] which fails with the given error, if the given [value] is null.
+         *
+         * This is very useful for checking invariants before performing an action.
+         *
+         * ## Example
+         *
+         * ```kotlin
+         * val password = !KIO.failOnNull(userPassword) {
+         *     Error.UnknownPassword
+         * }
+         * ```
+         */
+        fun <E, A> failOnNull(value: A?, error: () -> E): IO<E, A> =
+            if (value == null) fail(error()) else ok(value)
 
         /**
          * Returns a new [KIO], which acquires a resource using [acquire],
@@ -460,7 +475,7 @@ sealed class KIO<in R, out E, out A>: Serializable {
          * @return an [Exit], which encapsulate
          */
         @Throws(VirtualMachineError::class)
-        fun <E, A> KIO<Any?, E, A>.unsafeRunSync(): Exit<E, A> =
+        fun <E, A> IO<E, A>.unsafeRunSync(): Exit<E, A> =
             Runtime.new(Unit).unsafeRunSync(this)
 
     }
