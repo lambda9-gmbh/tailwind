@@ -3,6 +3,7 @@ package de.lambda9.tailwind.core
 import de.lambda9.tailwind.core.extensions.kio.andThen
 import de.lambda9.tailwind.core.extensions.kio.catchError
 import de.lambda9.tailwind.core.extensions.kio.foldCauseM
+import de.lambda9.tailwind.core.extensions.kio.recover
 import de.lambda9.tailwind.core.extensions.kio.run
 import java.io.Serializable
 
@@ -69,7 +70,7 @@ sealed class KIO<in R, out E, out A>: Serializable {
      * @param
      */
     fun <E1> mapError(h: (E) -> E1): KIO<R, E1, A> =
-        catchError { fail(h(it)) }
+        recover { fail(h(it)) }
 
     /**
      * Returns a new [KIO], which
@@ -77,7 +78,7 @@ sealed class KIO<in R, out E, out A>: Serializable {
      * @param env any environment
      */
     @Deprecated("Bitte ")
-    fun provide(env: R): IO<E, A> =
+    internal fun provide(env: R): IO<E, A> =
         Provide(this, env)
 
     /**
