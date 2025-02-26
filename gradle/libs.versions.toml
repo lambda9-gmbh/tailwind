@@ -25,6 +25,5 @@ postgres = { module = "org.postgresql:postgresql", version.ref = "postgres" }
 
 # Libraries can be bundled together for easier import
 [bundles]
-kotlinxEcosystem = []
 
 [plugins]

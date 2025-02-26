@@ -17,13 +17,12 @@ infix fun <R, R1: R, E: E1, E1, A, B> KIO<R, E, A>.andThen(f: (A) -> KIO<R1, E1,
     KIO.FlatMap(this, f)
 
 /**
- * Returns a [KIO], which runs this [KIO], followed by passing its
- * value into the function [f] and returning the resulting [KIO].
+ * Flattens the current `KIO<R, E, KIO<R, E, A>>`.
  *
  * @param f a function, which will be applied to a successful value of type [A]
  * @return a new [KIO]
  */
-fun <R, R1: R, R2, E, E1: E, E2: E, A, B> KIO<R, E1, KIO<R1, E2, A>>.flatten(): KIO<R1, E, A> =
+fun <R, R1: R, E, E1: E, E2: E, A> KIO<R, E1, KIO<R1, E2, A>>.flatten(): KIO<R1, E, A> =
     andThen { it }
 
 /**

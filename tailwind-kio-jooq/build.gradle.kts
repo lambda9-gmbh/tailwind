@@ -12,6 +12,10 @@ publishing {
             artifactId = "tailwind-kio-jooq"
             version = "1.0.0-SNAPSHOT"
 
+            pom {
+                name = "tailwind-kio-jooq"
+            }
+
             from(components["java"])
         }
     }

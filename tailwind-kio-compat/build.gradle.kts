@@ -5,6 +5,19 @@ plugins {
     id("org.jetbrains.dokka")
 }
 
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = "de.lambda9.tailwind"
+            artifactId = "tailwind-kio-compat"
+            version = "1.0.0-SNAPSHOT"
+
+            from(components["java"])
+        }
+    }
+}
+
+
 dependencies {
     implementation(project(":tailwind-kio"))
     testImplementation(kotlin("test"))
