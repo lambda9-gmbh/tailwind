@@ -8,8 +8,6 @@ plugins {
     // Apply the Kotlin JVM plugin to add support for Kotlin in JVM projects.
     kotlin("jvm")
     id("org.jetbrains.dokka")
-    `maven-publish`
-    signing
 }
 
 dokka {

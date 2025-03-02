@@ -7,16 +7,11 @@ plugins {
 
 publishing {
     publications {
-        create<MavenPublication>("maven") {
-            groupId = "de.lambda9.tailwind"
-            artifactId = "tailwind-kio-jooq"
-            version = "1.0.0-SNAPSHOT"
-
+        named<MavenPublication>("maven") {
             pom {
-                name = "tailwind-kio-jooq"
+                name = "Tailwind KIO JOOQ"
+                description = "A library to be used integrating KIO and JOOQ."
             }
-
-            from(components["java"])
         }
     }
 }

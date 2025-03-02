@@ -7,16 +7,14 @@ plugins {
 
 publishing {
     publications {
-        create<MavenPublication>("maven") {
-            groupId = "de.lambda9.tailwind"
-            artifactId = "tailwind-kio-compat"
-            version = "1.0.0-SNAPSHOT"
-
-            from(components["java"])
+        named<MavenPublication>("maven") {
+            pom {
+                name = "Tailwind KIO Compat"
+                description = "A library used for old applications in the lambda9 GmbH."
+            }
         }
     }
 }
-
 
 dependencies {
     implementation(project(":tailwind-kio"))

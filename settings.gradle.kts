@@ -21,6 +21,6 @@ plugins {
 // Learn more about structuring projects with Gradle - https://docs.gradle.org/8.7/userguide/multi_project_builds.html
 include(":tailwind-kio")
 include(":tailwind-kio-jooq")
+include(":tailwind-kio-compat")
 
 rootProject.name = "tailwind"
-include("tailwind-kio-compat")
