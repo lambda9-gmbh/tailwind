@@ -17,6 +17,6 @@ dependencies {
     implementation(project(":tailwind-kio"))
     testImplementation(kotlin("test"))
     implementation(libs.kotlinLogging)
-    implementation("org.slf4j:slf4j-api:2.0.5")
+    testImplementation(libs.slf4j)
 }
 

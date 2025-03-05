@@ -1,4 +1,4 @@
-package de.lambda9.tailwind.fmt
+package de.lambda9.tailwind.core.fmt
 
 import java.io.Serializable
 

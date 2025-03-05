@@ -10,14 +10,22 @@ interface Runtime<R>: Serializable {
     val env: R
 
     /**
-     * @param kio
+     * Run the given [kio] value and throw a [KIOException] if
+     * it errored.
+     *
+     * @param kio a value to be run
+     * @return a value of type [A] if nothing failed.
      */
+    @Throws(KIOException::class)
     fun <E, A> unsafeRun(kio: KIO<R, E, A>): A =
         unsafeRunSync(kio).getOrElse { throw KIOException(it) }
 
     /**
+     * Run the given [kio] value and return an [Exit] containing
+     * either an expected failure or an unexpected failure.
      *
-     * @param kio
+     * @param kio a value to be run
+     * @return a value of type [A] if nothing failed.
      */
     fun <E, A> unsafeRunSync(kio: KIO<R, E, A>): Exit<E, A> =
         RunLoop(env).unsafeRunSync(kio)
@@ -25,6 +33,9 @@ interface Runtime<R>: Serializable {
 
     companion object {
 
+        /**
+         * Create a new [Runtime].
+         */
         fun <R> new(env: R): Runtime<R> = object: Runtime<R> {
             override val env: R get() = env
         }

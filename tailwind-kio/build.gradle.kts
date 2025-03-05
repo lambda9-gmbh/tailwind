@@ -16,5 +16,6 @@ mavenPublishing {
 dependencies {
     testImplementation(kotlin("test"))
     implementation(libs.kotlinLogging)
+    testImplementation(libs.slf4j)
 }
 

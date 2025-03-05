@@ -1,7 +1,6 @@
 package de.lambda9.tailwind.core
 
 import de.lambda9.tailwind.core.extensions.kio.andThen
-import de.lambda9.tailwind.core.extensions.kio.catchError
 import de.lambda9.tailwind.core.extensions.kio.foldCauseM
 import de.lambda9.tailwind.core.extensions.kio.recover
 import de.lambda9.tailwind.core.extensions.kio.run
@@ -67,7 +66,8 @@ sealed class KIO<in R, out E, out A>: Serializable {
      * Returns a new [KIO], which applies the given function [h] to
      * the error [E] to retrieve a new error [E1].
      *
-     * @param
+     * @param h map the given error to [E1]
+     * @return a new [KIO] with a transformed error
      */
     fun <E1> mapError(h: (E) -> E1): KIO<R, E1, A> =
         recover { fail(h(it)) }

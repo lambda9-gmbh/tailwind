@@ -10,7 +10,7 @@ import kotlin.jvm.Throws
 /**
  * Returns the successful value or the value returned by [f].
  *
- * @param f
+ * @param f the resulting value
  */
 inline fun <E, A: A1, A1> Exit<E, A>.getOrElse(
     f: (Cause<E>) -> A1,
@@ -44,7 +44,7 @@ fun <E, A> Exit<E, A>.getOrThrow(): A =
 
 
 /**
- * Returns
+ * Returns `null` if any error occurred or the actual value of type [A].
  */
 fun <E, A> Exit<E, A>.getOrNull(): A? =
     getOrElse { null }
