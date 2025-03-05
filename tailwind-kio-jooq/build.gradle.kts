@@ -5,14 +5,11 @@ plugins {
     id("org.jetbrains.dokka")
 }
 
-publishing {
-    publications {
-        named<MavenPublication>("maven") {
-            pom {
-                name = "Tailwind KIO JOOQ"
-                description = "A library to be used integrating KIO and JOOQ."
-            }
-        }
+mavenPublishing {
+    coordinates("de.lambda9.tailwind", "tailwind-kio-jooq", project.version as String)
+    pom {
+        name.set("Tailwind KIO Compat")
+        description.set("A library to be used integrating KIO and JOOQ.")
     }
 }
 

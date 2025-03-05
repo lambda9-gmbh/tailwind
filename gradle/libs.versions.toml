@@ -10,10 +10,12 @@ hikari = "6.2.1"
 testcontainers = "1.20.4"
 flyway = "11.2.0"
 postgres = "42.7.5"
+slf4j = "2.0.5"
 
 [libraries]
 kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlinLogging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "kotlin-logging" }
+slf4j = { module = "org.slf4j:slf4j-api", version.ref = "slf4j"}
 jooq = { module = "org.jooq:jooq", version.ref = "jooq" }
 hikari = { module = "com.zaxxer:HikariCP", version.ref = "hikari" }
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }

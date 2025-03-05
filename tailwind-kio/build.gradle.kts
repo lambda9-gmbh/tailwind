@@ -5,20 +5,16 @@ plugins {
     id("org.jetbrains.dokka")
 }
 
-publishing {
-    publications {
-        named<MavenPublication>("maven") {
-            pom {
-                name = "Tailwind KIO"
-                description = "A library used in the lambda9 GmbH to work with IO"
-            }
-        }
+mavenPublishing {
+    coordinates("de.lambda9.tailwind", "tailwind-kio", project.version as String)
+    pom {
+        name.set("Tailwind KIO")
+        description.set("A library used in the lambda9 GmbH to work with IO")
     }
 }
 
 dependencies {
     testImplementation(kotlin("test"))
     implementation(libs.kotlinLogging)
-    implementation("org.slf4j:slf4j-api:2.0.5")
 }
 

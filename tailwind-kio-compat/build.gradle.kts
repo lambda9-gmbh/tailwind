@@ -5,14 +5,11 @@ plugins {
     id("org.jetbrains.dokka")
 }
 
-publishing {
-    publications {
-        named<MavenPublication>("maven") {
-            pom {
-                name = "Tailwind KIO Compat"
-                description = "A library used for old applications in the lambda9 GmbH."
-            }
-        }
+mavenPublishing {
+    coordinates("de.lambda9.tailwind", "tailwind-kio-compat", project.version as String)
+    pom {
+        name.set("Tailwind KIO Compat")
+        description.set("A library used for old applications in the lambda9 GmbH.")
     }
 }
 
