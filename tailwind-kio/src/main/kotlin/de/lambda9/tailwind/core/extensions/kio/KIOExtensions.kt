@@ -388,9 +388,9 @@ infix fun <R, E: E1, E1, A> KIO<R, E, A>.recoverCause(
  * @param h a handler, which will be invoked on the error [E].
  * @return a new [KIO]
  */
-infix fun <R, E: E1, E1, A> KIO<R, E, A>.recoverDefault(
+infix fun <R, E, A> KIO<R, E, A>.recoverDefault(
     h: () -> A
-): KIO<R, E1, A> =
+): KIO<R, Nothing, A> =
     recover { KIO.ok(h()) }
 
 
