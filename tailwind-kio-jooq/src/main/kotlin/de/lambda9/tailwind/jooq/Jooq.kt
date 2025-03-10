@@ -128,7 +128,7 @@ data class Jooq<out Env>(
          * @return a new [KIO]
          */
         fun <R, A> queryWithEnvironment(runQuery: DSLContext.(R) -> A): KIO<Jooq<R>, DataAccessException, A> =
-            KIO.accessM { KIO { runQuery(it.dsl, it.env) }.refineOrDie(DataAccessException::class) }
+            KIO.accessM { KIO.effect { runQuery(it.dsl, it.env) }.refineOrDie(DataAccessException::class) }
 
         /**
          * Create a new [Jooq] environment from the given [config] and [env].

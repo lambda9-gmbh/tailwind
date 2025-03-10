@@ -5,6 +5,8 @@ import de.lambda9.tailwind.core.extensions.kio.foldCauseM
 import de.lambda9.tailwind.core.extensions.kio.recover
 import de.lambda9.tailwind.core.extensions.kio.run
 import java.io.Serializable
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.contract
 
 /**
  * An [IO] is a [KIO], which may fail with an error of
@@ -45,12 +47,6 @@ typealias URIO<R, A> = KIO<R, Nothing, A>
 sealed class KIO<in R, out E, out A>: Serializable {
 
     /**
-     * Returns a new [KIO], which re-runs this computation forever.
-     */
-    val forever: KIO<R, E, Nothing> get() =
-        andThen { forever }
-
-    /**
      * Returns a new [KIO], which applies the given function [f] to
      * a successful the computed value [A] to retrieve a value of [B].
      *
@@ -71,15 +67,6 @@ sealed class KIO<in R, out E, out A>: Serializable {
      */
     fun <E1> mapError(h: (E) -> E1): KIO<R, E1, A> =
         recover { fail(h(it)) }
-
-    /**
-     * Returns a new [KIO], which
-     *
-     * @param env any environment
-     */
-    @Deprecated("Bitte ")
-    internal fun provide(env: R): IO<E, A> =
-        Provide(this, env)
 
     /**
      * The [ComprehensionScope] defines a scope for a [comprehension].
@@ -165,21 +152,24 @@ sealed class KIO<in R, out E, out A>: Serializable {
          * @param value a value
          * @return a new [Task], which runs the given value
          */
+        @Deprecated(message = "Please use KIO.effect for clarity. This will be removed before 1.0.", replaceWith = ReplaceWith("effect(value)") )
         operator fun <A> invoke(value: () -> A): Task<A> =
             effect(value)
 
         /**
          * Returns an [UIO], which always succeeds with the given value.
          *
-         * @param value any value
+         * @param value any value of type [A]
          * @return a new [UIO]
          */
         fun <A> ok(value: A): UIO<A> =
             Success(value)
 
         /**
-         * Returns a [KIO], which
+         * Returns a [KIO], which either fails or success based on
+         * the given [Exit].
          *
+         * @param value an [Exit] - maybe from a previous computation.
          * @return a new [KIO]
          */
         fun <E, A> done(exit: Exit<E, A>): IO<E, A> =
@@ -285,7 +275,7 @@ sealed class KIO<in R, out E, out A>: Serializable {
         /**
          * Returns a KIO which fails, if the [predicate] resolves to true.
          *
-         * This is very useful for checking invariants before performing an actions.
+         * This is very useful for checking invariants before performing actions.
          *
          * ## Example
          *
@@ -295,8 +285,8 @@ sealed class KIO<in R, out E, out A>: Serializable {
          * }
          * ```
          *
-         * @param predicate
-         * @param f
+         * @param predicate a predicate
+         * @param f creates the error this computation fails with
          */
         fun <E: E1, E1> failOn(predicate: Boolean, f: () -> E): KIO<Any?, E1, Unit> =
             if (predicate) fail(f()) else unit
@@ -304,18 +294,18 @@ sealed class KIO<in R, out E, out A>: Serializable {
         /**
          * Returns a KIO which fails, if the [predicate] resolves to true.
          *
-         * This is very useful for checking invariants before performing an actions.
+         * This is very useful for checking invariants before performing actions.
          *
          * ## Example
          *
          * ```kotlin
-         * !KIO.failOn(!course.type.isG() && maybeSecondGCourse != null) {
+         * !KIO.failOnM(KIO.ok(!course.type.isG() && maybeSecondGCourse != null)) {
          *     Error.OnlyTwoGCoursesAllowed(course, maybeSecondGCourse)
          * }
          * ```
          *
-         * @param predicate
-         * @param f
+         * @param predicate a predicate
+         * @param f creates the error this computation fails with
          */
         fun <R, E: E1, E1> failOnM(predicate: KIO<R, E, Boolean>, f: () -> E1): KIO<R, E1, Unit> =
             predicate andThen { failOn(it, f) }
@@ -332,6 +322,9 @@ sealed class KIO<in R, out E, out A>: Serializable {
          *     Error.UnknownPassword
          * }
          * ```
+         *
+         * @param value a nullable value of type [A]
+         * @param error creates an error of type [E]
          */
         fun <E, A> failOnNull(value: A?, error: () -> E): IO<E, A> =
             if (value == null) fail(error()) else ok(value)
@@ -376,7 +369,7 @@ sealed class KIO<in R, out E, out A>: Serializable {
          * @param use use the resource of type [A] with this function
          * @return a new [KIO]
          */
-        fun <R, E, A, B> bracket(
+        internal fun <R, E, A, B> bracket(
             acquire: KIO<R, E, A>,
             release: (A) -> URIO<R, Any?>,
             use: (A) -> KIO<R, E, B>
@@ -427,32 +420,6 @@ sealed class KIO<in R, out E, out A>: Serializable {
                 )
             }
         }
-
-        /**
-         * Returns a new successful [KIO] for this value of type [A].
-         *
-         * ### Example
-         *
-         * This is especially useful for stuff
-         *
-         * ```kotlin
-         * assertEquals(5.ok(), KIO.ok(5))
-         * ```
-         *
-         * @return a new [KIO]
-         */
-        @JvmName("okExt")
-        fun <A> A.ok(): UIO<A> =
-            ok(this)
-
-        /**
-         * Returns a new [KIO], which failed with an error of type [E].
-         *
-         * @return a new [KIO]
-         */
-        @JvmName("failExt")
-        fun <E> E.fail(): IO<E, Nothing> =
-            fail(this)
 
         /**
          * Runs the given [KIO] with the given [env], by creating an

@@ -7,6 +7,7 @@ import de.lambda9.tailwind.core.extensions.kio.onNull
 import org.junit.jupiter.api.DisplayName
 import kotlin.random.Random
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
@@ -82,7 +83,7 @@ class KIOExtensionsTest {
 
         val result = runtime.unsafeRun(given
             .map { KIO.ok(it) }
-            .collect())
+            .sequence())
 
         assertEquals(given, result)
     }
@@ -96,8 +97,8 @@ class KIOExtensionsTest {
             .map { Random.Default.nextInt() }
             .toList()
 
-        val a = runtime.unsafeRun(given.collectBy(f))
-        val b = runtime.unsafeRun(given.map(f).collect())
+        val a = runtime.unsafeRun(given.traverse(f))
+        val b = runtime.unsafeRun(given.map(f).sequence())
         assertEquals(a, b)
     }
 
@@ -144,7 +145,7 @@ class KIOExtensionsTest {
         val a = KIO.effect { 5 }
         val composed = a.andThen {
             KIO.effect {
-                Unit
+                println("Hello World!")
             }
         }
 
@@ -165,14 +166,6 @@ class KIOExtensionsTest {
         val getEnv = KIO.access<Int>()
         val result = r.unsafeRun(getEnv)
         assertEquals(5, result)
-    }
-
-    @Test
-    fun `access retrieves the current environment, when one was provided`() {
-        val r = Runtime.new(5)
-        val getEnv = KIO.access<Int>()
-        @Suppress("DEPRECATION") val result = r.unsafeRun(getEnv.provide(8))
-        assertEquals(8, result)
     }
 
     /**
@@ -293,7 +286,7 @@ class KIOExtensionsTest {
     fun testCollectSuccess() {
         // collect runs a list of successful KIO actions and aggregates the results.
         val computations = listOf(KIO.ok(1), KIO.ok(2), KIO.ok(3))
-        val collected = computations.collect()
+        val collected = computations.sequence()
         val exit = collected.unsafeRunSync()
         when (exit) {
             is Exit.Success -> assertEquals(listOf(1, 2, 3), exit.value)
@@ -305,7 +298,7 @@ class KIOExtensionsTest {
     fun testCollectFailure() {
         // If any action fails, collect should bail immediately.
         val computations = listOf(KIO.ok(1), KIO.fail("error"), KIO.ok(3))
-        val collected = computations.collect()
+        val collected = computations.sequence()
         val exit = collected.unsafeRunSync()
         when (exit) {
             is Exit.Success -> fail("Expected failure, got success")
@@ -317,7 +310,7 @@ class KIOExtensionsTest {
     fun testCollectBy() {
         // collectBy maps each element to a KIO and collects the results.
         val list = listOf(1, 2, 3)
-        val computation = list.collectBy { a -> KIO.ok(a * 10) }
+        val computation = list.traverse { a -> KIO.ok(a * 10) }
         val exit = computation.unsafeRunSync()
         when (exit) {
             is Exit.Success -> assertEquals(listOf(10, 20, 30), exit.value)

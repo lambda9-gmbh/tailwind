@@ -1,9 +1,12 @@
 # Changelog
 
-## v0.1.1
+## v0.2.0
 
-- fix type parameters of KIO#recoverDefault
-
+- fix type parameters and arguments of `KIO.recoverDefault`
+- `traverse` and `sequence` instead of `collect` und `collectBy`
+- removed `A.ok` and `A.fail` (too many ways to do the same thing)
+- removed `KIO.forever` (not necessary without coroutine support)
+- add and fix various comments
 
 
 ## v0.1.0

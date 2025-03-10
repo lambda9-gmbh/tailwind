@@ -2,6 +2,7 @@
 package de.lambda9.tailwind.core.extensions.kio
 
 import de.lambda9.tailwind.core.*
+import de.lambda9.tailwind.core.KIO.Companion.unsafeRunSync
 import java.time.Duration
 import kotlin.reflect.KClass
 
@@ -17,9 +18,8 @@ infix fun <R, R1: R, E: E1, E1, A, B> KIO<R, E, A>.andThen(f: (A) -> KIO<R1, E1,
     KIO.FlatMap(this, f)
 
 /**
- * Flattens the current `KIO<R, E, KIO<R, E, A>>`.
+ * Flattens the current `KIO<R, E, KIO<R, E, A>>` to `KIO<R, E, A>`.
  *
- * @param f a function, which will be applied to a successful value of type [A]
  * @return a new [KIO]
  */
 fun <R, R1: R, E, E1: E, E2: E, A> KIO<R, E1, KIO<R1, E2, A>>.flatten(): KIO<R1, E, A> =
@@ -157,7 +157,9 @@ infix fun <R, R1: R, E: E1, E1, A> KIO<R, E, A?>.orOnNull(
  * returns an error as a [Result].
  *
  * This combinator is very useful for computations, that may fail
- * and where you just want to log the failure.
+ * and where you just want to log the failure. Additionally, it
+ * might be useful in writing Tests, where you just want to run an action
+ * and don't think it might fail. Also consider [run] in those cases.
  *
  * @return a new [KIO]
  */
@@ -174,6 +176,7 @@ fun <R, E, A> KIO<R, E, A>.attempt(): KIO<R, Nothing, Result<E, A>> =
  *
  * @return a new [KIO]
  */
+@Deprecated(message = "After years of feedback, that people don't like collect and collectBy, I have to see that I made a mistake.", replaceWith = ReplaceWith("sequence()"))
 fun <R, E, A> Iterable<KIO<R, E, A>>.collect(): KIO<R, E, List<A>> =
     fold(KIO.ok(listOf())) { result: KIO<R, E, List<A>>, next ->
         result.andThen { xs: List<A> ->
@@ -187,12 +190,50 @@ fun <R, E, A> Iterable<KIO<R, E, A>>.collect(): KIO<R, E, List<A>> =
  *
  * @return a new [KIO]
  */
+fun <R, E, A> Iterable<KIO<R, E, A>>.sequence(): KIO<R, E, List<A>> = KIO.accessM {
+    val result = mutableListOf<A>()
+    for (value in this) {
+        value.unsafeRunSync(it).fold(
+            onSuccess = { result.add(it) },
+            onError = { return@accessM KIO.halt(it) }
+        )
+    }
+
+    KIO.ok(result)
+}
+
+/**
+ * Returns a [KIO], which will run every [KIO] in the list and
+ * bail on the first error.
+ *
+ * @return a new [KIO]
+ */
+@Deprecated(message = "After years of feedback people don't like collect and collectBy.", replaceWith = ReplaceWith("traverse(f)"))
 fun <R, E, A, B> Iterable<A>.collectBy(f: (A) -> KIO<R, E, B>): KIO<R, E, List<B>> =
     fold(KIO.ok(mutableListOf())) { result: KIO<R, E, List<B>>, next ->
         result.andThen { xs: List<B> ->
             f(next).map { xs + listOf(it) }
         }
     }
+
+/**
+ * Returns a [KIO], which will run every [KIO] in the list and
+ * bail on the first error.
+ *
+ * @param f the function to transform any `A` to a `KIO`.
+ * @return a new [KIO]
+ */
+fun <R, E, A, B> Iterable<A>.traverse(f: (A) -> KIO<R, E, B>): KIO<R, E, List<B>> = KIO.accessM {
+    val result = mutableListOf<B>()
+    for (value in this) {
+        f(value).unsafeRunSync(it).fold(
+            onSuccess = { result.add(it) },
+            onError = { return@accessM KIO.halt(it) }
+        )
+    }
+
+    KIO.ok(result)
+}
 
 
 /**
@@ -201,9 +242,9 @@ fun <R, E, A, B> Iterable<A>.collectBy(f: (A) -> KIO<R, E, B>): KIO<R, E, List<B
  * @param f
  * @return
  */
-@Deprecated("Deprecated in favor of collectBy", replaceWith = ReplaceWith("collectBy(f)"))
+@Deprecated("Deprecated in favor of traverse", replaceWith = ReplaceWith("traverse(f)"))
 fun <R, E, A, B> Iterable<A>.forEachM(f: (A) -> KIO<R, E, B>): KIO<R, E, List<B>> =
-    map(f).collect()
+    map(f).sequence()
 
 
 /**
@@ -367,11 +408,8 @@ infix fun <R, E, E1, A> KIO<R, E, A>.recover(
 /**
  * Returns a [KIO], which runs the handler [h] on an error.
  *
- * # Example
- *
- * This function is especially useful, if you also want to handle any
- * exception.
- *
+ * This function is especially useful, if you also want to also handle
+ * any exception.
  *
  * @param h a handler, which will be invoked on the error [E].
  * @return a new [KIO]
