@@ -70,8 +70,8 @@ sealed class Cause<out E> {
     /**
      * Fold this [Cause]
      *
-     * @param onExpected
-     * @param onPanic
+     * @param onExpected handles the expected error
+     * @param onPanic handles the unexpected error
      */
     @Suppress("DEPRECATION")
     inline fun <B> fold(
